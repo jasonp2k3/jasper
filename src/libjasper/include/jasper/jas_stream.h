@@ -252,7 +252,7 @@ typedef struct {
 typedef struct {
 	int fd;
 	int flags;
-	char pathname[L_tmpnam + 1];
+	char pathname[128];
 } jas_stream_fileobj_t;
 
 #define	JAS_STREAM_FILEOBJ_DELONCLOSE	0x01
