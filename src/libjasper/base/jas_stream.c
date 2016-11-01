@@ -523,11 +523,9 @@ jas_stream_t *jas_stream_tmpfile()
 		tmpdir = ".";
 	}
 	snprintf(obj->pathname, sizeof(obj->pathname), "%s/jasper.XXXXXX", tmpdir);
-	mkstemp(obj->pathname);
 
 	/* Open the underlying file. */
-	if ((obj->fd = open(obj->pathname, O_CREAT | O_EXCL | O_RDWR | O_TRUNC | O_BINARY,
-	  JAS_STREAM_PERMS)) < 0) {
+	if ((obj->fd = mkstemp(obj->pathname)) < 0) {
 		jas_stream_destroy(stream);
 		return 0;
 	}
