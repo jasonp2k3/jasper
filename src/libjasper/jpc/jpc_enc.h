@@ -201,11 +201,19 @@ typedef struct {
 	uint_fast32_t imgareatly;
 
 	/* The horizontal offset from the origin of the reference grid to the
-	  right edge of the image area (plus one). */
-	uint_fast32_t refgrdwidth;
+	  right edge of the image area. */
+	uint_fast32_t imgareabrx;
 
 	/* The vertical offset from the origin of the reference grid to the
-	  bottom edge of the image area (plus one). */
+	  bottom edge of the image area. */
+	uint_fast32_t imgareabry;
+
+	/* The width in reference grid units of the image area to be encoded
+	  (must envelop the viewable image area) */
+	uint_fast32_t refgrdwidth;
+
+	/* The height in reference grid units of the image area to be encoded
+	  (must envelop the viewable image area) */
 	uint_fast32_t refgrdheight;
 
 	/* The horizontal offset from the origin of the tile grid to the
