@@ -495,6 +495,7 @@ jas_stream_t *jas_stream_tmpfile()
 {
 	jas_stream_t *stream;
 	jas_stream_fileobj_t *obj;
+	char *tmpdir;
 
 	JAS_DBGLOG(100, ("jas_stream_tmpfile()\n"));
 
@@ -517,7 +518,12 @@ jas_stream_t *jas_stream_tmpfile()
 	stream->obj_ = obj;
 
 	/* Choose a file name. */
-	tmpnam(obj->pathname);
+	tmpdir = getenv("TMPDIR");
+	if (!tmpdir) {
+		tmpdir = ".";
+	}
+	snprintf(obj->pathname, sizeof(obj->pathname), "%s/jasper.XXXXXX", tmpdir);
+	mkstemp(obj->pathname);
 
 	/* Open the underlying file. */
 	if ((obj->fd = open(obj->pathname, O_CREAT | O_EXCL | O_RDWR | O_TRUNC | O_BINARY,
