@@ -188,8 +188,10 @@ static uint_fast32_t jpc_abstorelstepsize(jpc_fix_t absdelta, int scaleexpn)
 
 typedef enum {
 	OPT_DEBUG,
-	OPT_IMGAREAOFFX,
-	OPT_IMGAREAOFFY,
+	OPT_IMGAREATLX,
+	OPT_IMGAREATLY,
+	OPT_IMGAREABRX,
+	OPT_IMGAREABRY,
 	OPT_TILEGRDOFFX,
 	OPT_TILEGRDOFFY,
 	OPT_TILEWIDTH,
@@ -218,8 +220,10 @@ typedef enum {
 
 static jas_taginfo_t encopts[] = {
 	{OPT_DEBUG, "debug"},
-	{OPT_IMGAREAOFFX, "imgareatlx"},
-	{OPT_IMGAREAOFFY, "imgareatly"},
+	{OPT_IMGAREATLX, "imgareatlx"},
+	{OPT_IMGAREATLY, "imgareatly"},
+	{OPT_IMGAREABRX, "imgareabrx"},
+	{OPT_IMGAREABRY, "imgareabry"},
 	{OPT_TILEGRDOFFX, "tilegrdtlx"},
 	{OPT_TILEGRDOFFY, "tilegrdtly"},
 	{OPT_TILEWIDTH, "tilewidth"},
@@ -381,6 +385,8 @@ static jpc_enc_cp_t *cp_create(const char *optstr, jas_image_t *image)
 	cp->debug = 0;
 	cp->imgareatlx = UINT_FAST32_MAX;
 	cp->imgareatly = UINT_FAST32_MAX;
+	cp->imgareabrx = UINT_FAST32_MAX;
+	cp->imgareabry = UINT_FAST32_MAX;
 	cp->refgrdwidth = 0;
 	cp->refgrdheight = 0;
 	cp->tilegrdoffx = UINT_FAST32_MAX;
@@ -447,11 +453,17 @@ static jpc_enc_cp_t *cp_create(const char *optstr, jas_image_t *image)
 		case OPT_DEBUG:
 			cp->debug = atoi(jas_tvparser_getval(tvp));
 			break;
-		case OPT_IMGAREAOFFX:
+		case OPT_IMGAREATLX:
 			cp->imgareatlx = atoi(jas_tvparser_getval(tvp));
 			break;
-		case OPT_IMGAREAOFFY:
+		case OPT_IMGAREATLY:
 			cp->imgareatly = atoi(jas_tvparser_getval(tvp));
+			break;
+		case OPT_IMGAREABRX:
+			cp->imgareabrx = atoi(jas_tvparser_getval(tvp));
+			break;
+		case OPT_IMGAREABRY:
+			cp->imgareabry = atoi(jas_tvparser_getval(tvp));
 			break;
 		case OPT_TILEGRDOFFX:
 			cp->tilegrdoffx = atoi(jas_tvparser_getval(tvp));
@@ -563,36 +575,74 @@ static jpc_enc_cp_t *cp_create(const char *optstr, jas_image_t *image)
 		  (cp->totalsize - jp2overhead) : 0;
 	}
 
+	/* top left of image area */
 	if (cp->imgareatlx == UINT_FAST32_MAX) {
 		cp->imgareatlx = 0;
-	} else {
-		if (hsteplcm != 1) {
-			jas_eprintf("warning: overriding imgareatlx value\n");
-		}
+	} else if (hsteplcm != 1) {
+		jas_eprintf("warning: overriding imgareatlx value\n");
 		cp->imgareatlx *= hsteplcm;
 	}
 	if (cp->imgareatly == UINT_FAST32_MAX) {
 		cp->imgareatly = 0;
-	} else {
-		if (vsteplcm != 1) {
-			jas_eprintf("warning: overriding imgareatly value\n");
-		}
+	} else if (vsteplcm != 1) {
+		jas_eprintf("warning: overriding imgareatly value\n");
 		cp->imgareatly *= vsteplcm;
 	}
-	cp->refgrdwidth = cp->imgareatlx + jas_image_width(image);
-	cp->refgrdheight = cp->imgareatly + jas_image_height(image);
+	/* bottom right of image area */
+	if (cp->imgareabrx == UINT_FAST32_MAX) {
+		cp->imgareabrx = jas_image_width(image);
+	} else if (hsteplcm != 1) {
+		jas_eprintf("warning: overriding imgareabrx value\n");
+		cp->imgareabrx *= hsteplcm;
+	}
+	if (cp->imgareabry == UINT_FAST32_MAX) {
+		cp->imgareabry = jas_image_height(image);
+	} else if (vsteplcm != 1) {
+		jas_eprintf("warning: overriding imgareabry value\n");
+		cp->imgareabry *= vsteplcm;
+	}
+	/* tile grid envelops the image area */
 	if (cp->tilegrdoffx == UINT_FAST32_MAX) {
 		cp->tilegrdoffx = cp->imgareatlx;
 	}
 	if (cp->tilegrdoffy == UINT_FAST32_MAX) {
 		cp->tilegrdoffy = cp->imgareatly;
 	}
+	cp->refgrdwidth = cp->imgareabrx - cp->tilegrdoffx;
+	cp->refgrdheight = cp->imgareabry - cp->tilegrdoffy;
 	if (!cp->tilewidth) {
-		cp->tilewidth = cp->refgrdwidth - cp->tilegrdoffx;
+		cp->tilewidth = cp->refgrdwidth;
 	}
 	if (!cp->tileheight) {
-		cp->tileheight = cp->refgrdheight - cp->tilegrdoffy;
+		cp->tileheight = cp->refgrdheight;
 	}
+
+	/* Ensure that the tile width and height is valid. */
+	if (!cp->tilewidth) {
+		jas_eprintf("invalid tile width %lu\n", (unsigned long)
+		  cp->tilewidth);
+		goto error;
+	}
+	if (!cp->tileheight) {
+		jas_eprintf("invalid tile height %lu\n", (unsigned long)
+		  cp->tileheight);
+		goto error;
+	}
+
+	/* Ensure that the tile grid offset is valid. */
+	if (cp->tilegrdoffx > cp->imgareatlx ||
+	  cp->tilegrdoffy > cp->imgareatly ||
+	  cp->tilegrdoffx + cp->tilewidth < cp->imgareatlx ||
+	  cp->tilegrdoffy + cp->tileheight < cp->imgareatly) {
+		jas_eprintf("invalid tile grid offset (%lu, %lu)\n",
+		  (unsigned long) cp->tilegrdoffx, (unsigned long)
+		  cp->tilegrdoffy);
+		goto error;
+	}
+
+	cp->numhtiles = JPC_CEILDIV(cp->refgrdwidth, cp->tilewidth);
+	cp->numvtiles = JPC_CEILDIV(cp->refgrdheight, cp->tileheight);
+	cp->numtiles = cp->numhtiles * cp->numvtiles;
 
 	if (cp->numcmpts == 3) {
 		mctvalid = true;
@@ -624,35 +674,6 @@ static jpc_enc_cp_t *cp_create(const char *optstr, jas_image_t *image)
 	if (prcwidthexpn != 15 || prcheightexpn != 15) {
 		tccp->csty |= JPC_COX_PRT;
 	}
-
-	/* Ensure that the tile width and height is valid. */
-	if (!cp->tilewidth) {
-		jas_eprintf("invalid tile width %lu\n", (unsigned long)
-		  cp->tilewidth);
-		goto error;
-	}
-	if (!cp->tileheight) {
-		jas_eprintf("invalid tile height %lu\n", (unsigned long)
-		  cp->tileheight);
-		goto error;
-	}
-
-	/* Ensure that the tile grid offset is valid. */
-	if (cp->tilegrdoffx > cp->imgareatlx ||
-	  cp->tilegrdoffy > cp->imgareatly ||
-	  cp->tilegrdoffx + cp->tilewidth < cp->imgareatlx ||
-	  cp->tilegrdoffy + cp->tileheight < cp->imgareatly) {
-		jas_eprintf("invalid tile grid offset (%lu, %lu)\n",
-		  (unsigned long) cp->tilegrdoffx, (unsigned long)
-		  cp->tilegrdoffy);
-		goto error;
-	}
-
-	cp->numhtiles = JPC_CEILDIV(cp->refgrdwidth - cp->tilegrdoffx,
-	  cp->tilewidth);
-	cp->numvtiles = JPC_CEILDIV(cp->refgrdheight - cp->tilegrdoffy,
-	  cp->tileheight);
-	cp->numtiles = cp->numhtiles * cp->numvtiles;
 
 	if (ilyrrates && numilyrrates > 0) {
 		tcp->numlyrs = numilyrrates + 1;
@@ -932,8 +953,8 @@ startoff = jas_stream_getrwcount(enc->out);
 	siz->caps = 0;
 	siz->xoff = cp->imgareatlx;
 	siz->yoff = cp->imgareatly;
-	siz->width = cp->refgrdwidth;
-	siz->height = cp->refgrdheight;
+	siz->width = cp->imgareabrx;
+	siz->height = cp->imgareabry;
 	siz->tilexoff = cp->tilegrdoffx;
 	siz->tileyoff = cp->tilegrdoffy;
 	siz->tilewidth = cp->tilewidth;
@@ -1389,8 +1410,7 @@ and other characteristics */
 
 		cp = enc->cp;
 		rho = (double) (tile->brx - tile->tlx) * (tile->bry - tile->tly) /
-		  ((cp->refgrdwidth - cp->imgareatlx) * (cp->refgrdheight -
-		  cp->imgareatly));
+		  (cp->refgrdwidth * cp->refgrdheight);
 		tile->rawsize = cp->rawsize * rho;
 
 		for (lyrno = 0; lyrno < tile->numlyrs - 1; ++lyrno) {
@@ -1963,9 +1983,9 @@ jpc_enc_tile_t *jpc_enc_tile_create(jpc_enc_cp_t *cp, jas_image_t *image, int ti
 	tile->tly = JAS_MAX(cp->tilegrdoffy + vtileno * cp->tileheight,
 	  cp->imgareatly);
 	tile->brx = JAS_MIN(cp->tilegrdoffx + (htileno + 1) * cp->tilewidth,
-	  cp->refgrdwidth);
+	  cp->imgareabrx);
 	tile->bry = JAS_MIN(cp->tilegrdoffy + (vtileno + 1) * cp->tileheight,
-	  cp->refgrdheight);
+	  cp->imgareabry);
 
 	/* Initialize some tile coding parameters. */
 	tile->intmode = cp->tcp.intmode;
@@ -2067,8 +2087,6 @@ static jpc_enc_tcmpt_t *tcmpt_create(jpc_enc_tcmpt_t *tcmpt, jpc_enc_cp_t *cp,
 	uint_fast32_t tly;
 	uint_fast32_t brx;
 	uint_fast32_t bry;
-	uint_fast32_t cmpttlx;
-	uint_fast32_t cmpttly;
 	jpc_enc_ccp_t *ccp;
 	jpc_tsfb_band_t bandinfos[JPC_MAXBANDS];
 
@@ -2095,9 +2113,7 @@ static jpc_enc_tcmpt_t *tcmpt_create(jpc_enc_tcmpt_t *tcmpt, jpc_enc_cp_t *cp,
 	}
 
 	/* Get the image data associated with this tile-component. */
-	cmpttlx = JPC_CEILDIV(cp->imgareatlx, ccp->sampgrdstepx);
-	cmpttly = JPC_CEILDIV(cp->imgareatly, ccp->sampgrdstepy);
-	if (jas_image_readcmpt(image, cmptno, tlx - cmpttlx, tly - cmpttly,
+	if (jas_image_readcmpt(image, cmptno, tlx, tly,
 	  brx - tlx, bry - tly, tcmpt->data)) {
 		goto error;
 	}
