@@ -540,6 +540,24 @@ int jas_image_writecmpt(jas_image_t *image, int cmptno, jas_image_coord_t x,
   jas_image_coord_t y, jas_image_coord_t width, jas_image_coord_t height,
   jas_matrix_t *data)
 {
+	JAS_DBGLOG(10, ("jas_image_writecmpt(%p, %d, %ld, %ld, %ld, %ld, %p)\n",
+	  image, cmptno, JAS_CAST(long, x), JAS_CAST(long, y),
+	  JAS_CAST(long, width), JAS_CAST(long, height), data));
+
+	if (jas_matrix_numrows(data) != height ||
+	  jas_matrix_numcols(data) != width) {
+		return -1;
+	}
+
+	return jas_image_writecmpt_partial(image, cmptno, x, y, 0, 0, width,
+	  height, data);
+}
+
+int jas_image_writecmpt_partial(jas_image_t *image, int cmptno, 
+  jas_image_coord_t xdest, jas_image_coord_t ydest, jas_image_coord_t xsrc, 
+  jas_image_coord_t ysrc, jas_image_coord_t width, jas_image_coord_t height, 
+  jas_matrix_t *data)
+{
 	jas_image_cmpt_t *cmpt;
 	jas_image_coord_t i;
 	jas_image_coord_t j;
@@ -550,36 +568,25 @@ int jas_image_writecmpt(jas_image_t *image, int cmptno, jas_image_coord_t x,
 	int k;
 	int c;
 
-	JAS_DBGLOG(10, ("jas_image_writecmpt(%p, %d, %ld, %ld, %ld, %ld, %p)\n",
-	  image, cmptno, JAS_CAST(long, x), JAS_CAST(long, y),
-	  JAS_CAST(long, width), JAS_CAST(long, height), data));
-
 	if (cmptno < 0 || cmptno >= image->numcmpts_) {
 		return -1;
 	}
 
 	cmpt = image->cmpts_[cmptno];
-	if (x >= cmpt->width_ || y >= cmpt->height_ ||
-	  x + width > cmpt->width_ ||
-	  y + height > cmpt->height_) {
+	if (xdest >= cmpt->width_ || ydest >= cmpt->height_ ||
+	  xdest + width > cmpt->width_ ||
+	  ydest + height > cmpt->height_ ||
+	  xsrc + width > jas_matrix_numcols(data) ||
+	  ysrc + height > jas_matrix_numrows(data)) {
 		return -1;
 	}
 
-	if (!jas_matrix_numrows(data) || !jas_matrix_numcols(data)) {
-		return -1;
-	}
-
-	if (jas_matrix_numrows(data) != height ||
-	  jas_matrix_numcols(data) != width) {
-		return -1;
-	}
-
-	dr = jas_matrix_getref(data, 0, 0);
+	dr = jas_matrix_getref(data, ysrc, xsrc);
 	drs = jas_matrix_rowstep(data);
 	for (i = 0; i < height; ++i, dr += drs) {
 		d = dr;
-		if (jas_stream_seek(cmpt->stream_, (cmpt->width_ * (y + i) + x)
-		  * cmpt->cps_, SEEK_SET) < 0) {
+		if (jas_stream_seek(cmpt->stream_, (cmpt->width_ * (ydest + 
+		  i) + xdest) * cmpt->cps_, SEEK_SET) < 0) {
 			return -1;
 		}
 		for (j = width; j > 0; --j, ++d) {

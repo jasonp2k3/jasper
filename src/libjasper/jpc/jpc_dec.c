@@ -301,6 +301,10 @@ error:
 typedef enum {
 	OPT_MAXLYRS,
 	OPT_MAXPKTS,
+	OPT_IMGAREATLX,
+	OPT_IMGAREATLY,
+	OPT_IMGAREABRX,
+	OPT_IMGAREABRY,
 	OPT_MAXSAMPLES,
 	OPT_DEBUG
 } optid_t;
@@ -308,6 +312,10 @@ typedef enum {
 static jas_taginfo_t decopts[] = {
 	{OPT_MAXLYRS, "maxlyrs"},
 	{OPT_MAXPKTS, "maxpkts"},
+	{OPT_IMGAREATLX, "imgareatlx"},
+	{OPT_IMGAREATLY, "imgareatly"},
+	{OPT_IMGAREABRX, "imgareabrx"},
+	{OPT_IMGAREABRY, "imgareabry"},
 	{OPT_MAXSAMPLES, "max_samples"},
 	{OPT_DEBUG, "debug"},
 	{-1, 0}
@@ -327,6 +335,10 @@ static jpc_dec_importopts_t *jpc_dec_opts_create(const char *optstr)
 	opts->debug = 0;
 	opts->maxlyrs = JPC_MAXLYRS;
 	opts->maxpkts = -1;
+	opts->imgareatlx = UINT_FAST32_MAX;
+	opts->imgareatly = UINT_FAST32_MAX;
+	opts->imgareabrx = UINT_FAST32_MAX;
+	opts->imgareabry = UINT_FAST32_MAX;
 	opts->max_samples = JAS_DEC_DEFAULT_MAX_SAMPLES;
 
 	if (!(tvp = jas_tvparser_create(optstr ? optstr : ""))) {
@@ -344,6 +356,18 @@ static jpc_dec_importopts_t *jpc_dec_opts_create(const char *optstr)
 			break;
 		case OPT_MAXPKTS:
 			opts->maxpkts = atoi(jas_tvparser_getval(tvp));
+			break;
+		case OPT_IMGAREATLX:
+			opts->imgareatlx = atoi(jas_tvparser_getval(tvp));
+			break;
+		case OPT_IMGAREATLY:
+			opts->imgareatly = atoi(jas_tvparser_getval(tvp));
+			break;
+		case OPT_IMGAREABRX:
+			opts->imgareabrx = atoi(jas_tvparser_getval(tvp));
+			break;
+		case OPT_IMGAREABRY:
+			opts->imgareabry = atoi(jas_tvparser_getval(tvp));
 			break;
 		case OPT_MAXSAMPLES:
 			opts->max_samples = strtoull(jas_tvparser_getval(tvp), 0, 10);
@@ -490,8 +514,8 @@ static int jpc_dec_process_sot(jpc_dec_t *dec, jpc_ms_t *ms)
 		}
 		for (cmptno = 0, cmpt = dec->cmpts, compinfo = compinfos;
 		  cmptno < dec->numcomps; ++cmptno, ++cmpt, ++compinfo) {
-			compinfo->tlx = 0;
-			compinfo->tly = 0;
+			compinfo->tlx = cmpt->xstart;
+			compinfo->tly = cmpt->ystart;
 			compinfo->prec = cmpt->prec;
 			compinfo->sgnd = cmpt->sgnd;
 			compinfo->width = cmpt->width;
@@ -527,13 +551,24 @@ static int jpc_dec_process_sot(jpc_dec_t *dec, jpc_ms_t *ms)
 		dec->curtileendoff = 0;
 	}
 
-	if (JAS_CAST(int, sot->tileno) >= dec->numtiles) {
+	if (JAS_CAST(int, sot->tileno) >= dec->maxtiles) {
 		jas_eprintf("invalid tile number in SOT marker segment\n");
 		return -1;
 	}
-	/* Set the current tile. */
-	dec->curtile = &dec->tiles[sot->tileno];
-	tile = dec->curtile;
+
+	/* Set the current tile, or fast-forward if the tile
+	   needs to be skipped. */
+	if (dec->tilemap[sot->tileno] < 0) {
+		if (dec->curtileendoff) {
+			int size = dec->curtileendoff - 
+			  jas_stream_getrwcount(dec->in);
+			if (jas_stream_gobble(dec->in, size) != size) {
+				return -1;
+			}
+		}
+		return 0;
+	}
+	tile = dec->curtile = &dec->tiles[dec->tilemap[sot->tileno]];
 	/* Ensure that this is the expected part number. */
 	if (sot->partno != tile->partno) {
 		return -1;
@@ -1189,10 +1224,18 @@ static int jpc_dec_tiledecode(jpc_dec_t *dec, jpc_dec_tile_t *tile)
 	/* Write the data for each component of the image. */
 	for (compno = 0, tcomp = tile->tcomps, cmpt = dec->cmpts; compno <
 	  dec->numcomps; ++compno, ++tcomp, ++cmpt) {
-		if (jas_image_writecmpt(dec->image, compno, tcomp->xstart -
-		  JPC_CEILDIV(dec->xstart, cmpt->hstep), tcomp->ystart -
-		  JPC_CEILDIV(dec->ystart, cmpt->vstep), jas_matrix_numcols(
-		  tcomp->data), jas_matrix_numrows(tcomp->data), tcomp->data)) {
+		uint_fast32_t imgxstart = JPC_CEILDIV(dec->xstart, cmpt->hstep);
+		uint_fast32_t imgystart = JPC_CEILDIV(dec->ystart, cmpt->vstep);
+		uint_fast32_t imgxend = JPC_CEILDIV(dec->xend, cmpt->hstep);
+		uint_fast32_t imgyend = JPC_CEILDIV(dec->yend, cmpt->vstep);
+		uint_fast32_t tlx = JAS_MAX(tcomp->xstart, imgxstart);
+		uint_fast32_t tly = JAS_MAX(tcomp->ystart, imgystart);
+		uint_fast32_t brx = JAS_MIN(tcomp->xend, imgxend);
+		uint_fast32_t bry = JAS_MIN(tcomp->yend, imgyend);
+
+		if (jas_image_writecmpt_partial(dec->image, compno, tlx - 
+		  imgxstart, tly - imgystart, tlx - tcomp->xstart, tly - 
+		  tcomp->ystart, brx - tlx, bry - tly, tcomp->data)) {
 			jas_eprintf("write component failed\n");
 			return -1;
 		}
@@ -1233,20 +1276,48 @@ static int jpc_dec_process_siz(jpc_dec_t *dec, jpc_ms_t *ms)
 {
 	jpc_siz_t *siz = &ms->parms.siz;
 	int compno;
-	int tileno;
 	jpc_dec_tile_t *tile;
 	jpc_dec_tcomp_t *tcomp;
 	int htileno;
 	int vtileno;
+	int numhtiles;
+	int numvtiles;
+	int imgtilexstart;
+	int imgtileystart;
+	int imgtilexend;
+	int imgtileyend;
 	jpc_dec_cmpt_t *cmpt;
 	size_t size;
 	size_t num_samples;
 	size_t num_samples_delta;
 
-	dec->xstart = siz->xoff;
-	dec->ystart = siz->yoff;
-	dec->xend = siz->width;
-	dec->yend = siz->height;
+	/* Image area is the intersection of the region given
+	   by the SIZ packet and any region supplied as decoder
+	   arguments. */
+	if (dec->xstart == UINT_FAST32_MAX) {
+		dec->xstart = siz->xoff;
+	}
+	else {
+		dec->xstart = JAS_MAX(dec->xstart, siz->xoff);
+	}
+	if (dec->xend == UINT_FAST32_MAX) {
+		dec->xend = siz->width;
+	}
+	else {
+		dec->xend = JAS_MIN(dec->xend, siz->width);
+	}
+	if (dec->ystart == UINT_FAST32_MAX) {
+		dec->ystart = siz->yoff;
+	}
+	else {
+		dec->ystart = JAS_MAX(dec->ystart, siz->yoff);
+	}
+	if (dec->yend == UINT_FAST32_MAX) {
+		dec->yend = siz->height;
+	}
+	else {
+		dec->yend = JAS_MIN(dec->yend, siz->height);
+	}
 	dec->tilewidth = siz->tilewidth;
 	dec->tileheight = siz->tileheight;
 	dec->tilexoff = siz->tilexoff;
@@ -1268,10 +1339,10 @@ static int jpc_dec_process_siz(jpc_dec_t *dec, jpc_ms_t *ms)
 		cmpt->sgnd = siz->comps[compno].sgnd;
 		cmpt->hstep = siz->comps[compno].hsamp;
 		cmpt->vstep = siz->comps[compno].vsamp;
-		cmpt->width = JPC_CEILDIV(dec->xend, cmpt->hstep) -
-		  JPC_CEILDIV(dec->xstart, cmpt->hstep);
-		cmpt->height = JPC_CEILDIV(dec->yend, cmpt->vstep) -
-		  JPC_CEILDIV(dec->ystart, cmpt->vstep);
+		cmpt->xstart = JPC_CEILDIV(dec->xstart, cmpt->hstep);
+		cmpt->ystart = JPC_CEILDIV(dec->ystart, cmpt->hstep);
+		cmpt->width = JPC_CEILDIV(dec->xend, cmpt->hstep) - cmpt->xstart;
+		cmpt->height = JPC_CEILDIV(dec->yend, cmpt->vstep) - cmpt->ystart;
 		cmpt->hsubstep = 0;
 		cmpt->vsubstep = 0;
 
@@ -1292,53 +1363,81 @@ static int jpc_dec_process_siz(jpc_dec_t *dec, jpc_ms_t *ms)
 
 	dec->image = 0;
 
-	dec->numhtiles = JPC_CEILDIV(dec->xend - dec->tilexoff, dec->tilewidth);
-	dec->numvtiles = JPC_CEILDIV(dec->yend - dec->tileyoff, dec->tileheight);
-	if (!jas_safe_size_mul(dec->numhtiles, dec->numvtiles, &size)) {
+	/* Count the tiles in the codestream. */
+	numhtiles = JPC_CEILDIV(siz->width - dec->tilexoff, dec->tilewidth);
+	numvtiles = JPC_CEILDIV(siz->height - dec->tileyoff, dec->tileheight);
+	if (!jas_safe_size_mul(numhtiles, numvtiles, &size)) {
+		return -1;
+	}
+	JAS_DBGLOG(10, ("numhtiles = %d; numvtiles = %d;\n", 
+	  numhtiles, numvtiles));
+
+	dec->maxtiles = size;
+	if (!(dec->tilemap = jas_alloc2(dec->maxtiles, sizeof(int)))) {
+		return -1;
+	}
+	for (htileno = 0; htileno < dec->maxtiles; ++htileno) {
+		dec->tilemap[htileno] = -1;
+	}
+
+	/* Count the tiles in the image window. */
+	imgtilexstart = (dec->xstart - dec->tilexoff) / dec->tilewidth;
+	imgtilexend = JPC_CEILDIV(dec->xend - dec->tilexoff, dec->tilewidth);
+	imgtileystart = (dec->ystart - dec->tileyoff) / dec->tileheight;
+	imgtileyend = JPC_CEILDIV(dec->yend - dec->tileyoff, dec->tileheight);
+	if (!jas_safe_size_mul(imgtilexend - imgtilexstart, 
+	  imgtileyend - imgtileystart, &size)) {
 		return -1;
 	}
 	dec->numtiles = size;
-	JAS_DBGLOG(10, ("numtiles = %d; numhtiles = %d; numvtiles = %d;\n",
-	  dec->numtiles, dec->numhtiles, dec->numvtiles));
+
 	if (!(dec->tiles = jas_alloc2(dec->numtiles, sizeof(jpc_dec_tile_t)))) {
 		return -1;
 	}
 
-	for (tileno = 0, tile = dec->tiles; tileno < dec->numtiles; ++tileno,
-	  ++tile) {
-		htileno = tileno % dec->numhtiles;
-		vtileno = tileno / dec->numhtiles;
-		tile->realmode = 0;
-		tile->state = JPC_TILE_INIT;
-		tile->xstart = JAS_MAX(dec->tilexoff + htileno * dec->tilewidth,
-		  dec->xstart);
-		tile->ystart = JAS_MAX(dec->tileyoff + vtileno * dec->tileheight,
-		  dec->ystart);
-		tile->xend = JAS_MIN(dec->tilexoff + (htileno + 1) *
-		  dec->tilewidth, dec->xend);
-		tile->yend = JAS_MIN(dec->tileyoff + (vtileno + 1) *
-		  dec->tileheight, dec->yend);
-		tile->numparts = 0;
-		tile->partno = 0;
-		tile->pkthdrstream = 0;
-		tile->pkthdrstreampos = 0;
-		tile->pptstab = 0;
-		tile->cp = 0;
-		tile->pi = 0;
-		if (!(tile->tcomps = jas_alloc2(dec->numcomps,
-		  sizeof(jpc_dec_tcomp_t)))) {
-			return -1;
-		}
-		for (compno = 0, cmpt = dec->cmpts, tcomp = tile->tcomps;
-		  compno < dec->numcomps; ++compno, ++cmpt, ++tcomp) {
-			tcomp->rlvls = 0;
-			tcomp->numrlvls = 0;
-			tcomp->data = 0;
-			tcomp->xstart = JPC_CEILDIV(tile->xstart, cmpt->hstep);
-			tcomp->ystart = JPC_CEILDIV(tile->ystart, cmpt->vstep);
-			tcomp->xend = JPC_CEILDIV(tile->xend, cmpt->hstep);
-			tcomp->yend = JPC_CEILDIV(tile->yend, cmpt->vstep);
-			tcomp->tsfb = 0;
+	for (vtileno = imgtileystart, tile = dec->tiles;
+	  vtileno < imgtileyend; ++vtileno) {
+		for (htileno = imgtilexstart; htileno < imgtilexend;
+		  ++htileno, ++tile) {
+
+			dec->tilemap[vtileno * numhtiles + htileno] = 
+			  tile - dec->tiles;
+
+			tile->state = JPC_TILE_INIT;
+			/* Note that the extent of the tile is bounded by 
+			   the encoded image, not any selected window. */
+			tile->xstart = JAS_MAX(dec->tilexoff + htileno * 
+			  dec->tilewidth, siz->xoff);
+			tile->ystart = JAS_MAX(dec->tileyoff + vtileno * 
+			  dec->tileheight, siz->yoff);
+			tile->xend = JAS_MIN(dec->tilexoff + (htileno + 1) * 
+			  dec->tilewidth, siz->width);
+			tile->yend = JAS_MIN(dec->tileyoff + (vtileno + 1) * 
+			  dec->tileheight, siz->height);
+			tile->realmode = 0;
+			tile->numparts = 0;
+			tile->partno = 0;
+			tile->pkthdrstream = 0;
+			tile->pkthdrstreampos = 0;
+			tile->pptstab = 0;
+			tile->cp = 0;
+			tile->pi = 0;
+			if (!(tile->tcomps = jas_alloc2(dec->numcomps,
+			  sizeof(jpc_dec_tcomp_t)))) {
+				return -1;
+			}
+			for (compno = 0, cmpt = dec->cmpts, 
+			  tcomp = tile->tcomps; compno < dec->numcomps; 
+			  ++compno, ++cmpt, ++tcomp) {
+				tcomp->rlvls = 0;
+				tcomp->numrlvls = 0;
+				tcomp->data = 0;
+				tcomp->xstart = JPC_CEILDIV(tile->xstart, cmpt->hstep);
+				tcomp->ystart = JPC_CEILDIV(tile->ystart, cmpt->vstep);
+				tcomp->xend = JPC_CEILDIV(tile->xend, cmpt->hstep);
+				tcomp->yend = JPC_CEILDIV(tile->yend, cmpt->vstep);
+				tcomp->tsfb = 0;
+			}
 		}
 	}
 
@@ -1955,22 +2054,22 @@ static jpc_dec_t *jpc_dec_create(jpc_dec_importopts_t *impopts, jas_stream_t *in
 {
 	jpc_dec_t *dec;
 
-	if (!(dec = jas_malloc(sizeof(jpc_dec_t)))) {
+	if (!(dec = (jpc_dec_t *)jas_malloc(sizeof(jpc_dec_t)))) {
 		return 0;
 	}
 
 	dec->image = 0;
-	dec->xstart = 0;
-	dec->ystart = 0;
-	dec->xend = 0;
-	dec->yend = 0;
+	dec->xstart = impopts->imgareatlx;
+	dec->ystart = impopts->imgareatly;
+	dec->xend = impopts->imgareabrx;
+	dec->yend = impopts->imgareabry;
 	dec->tilewidth = 0;
 	dec->tileheight = 0;
 	dec->tilexoff = 0;
 	dec->tileyoff = 0;
-	dec->numhtiles = 0;
-	dec->numvtiles = 0;
+	dec->maxtiles = 0;
 	dec->numtiles = 0;
+	dec->tilemap = 0;
 	dec->tiles = 0;
 	dec->curtile = 0;
 	dec->numcomps = 0;
@@ -2008,6 +2107,10 @@ static void jpc_dec_destroy(jpc_dec_t *dec)
 
 	if (dec->cmpts) {
 		jas_free(dec->cmpts);
+	}
+
+	if (dec->tilemap) {
+		jas_free(dec->tilemap);
 	}
 
 	if (dec->tiles) {
@@ -2068,7 +2171,7 @@ jpc_dec_seg_t *jpc_seg_alloc()
 {
 	jpc_dec_seg_t *seg;
 
-	if (!(seg = jas_malloc(sizeof(jpc_dec_seg_t)))) {
+	if (!(seg = (jpc_dec_seg_t *)jas_malloc(sizeof(jpc_dec_seg_t)))) {
 		return 0;
 	}
 	seg->prev = 0;
@@ -2175,7 +2278,7 @@ jpc_streamlist_t *jpc_streamlist_create()
 	jpc_streamlist_t *streamlist;
 	int i;
 
-	if (!(streamlist = jas_malloc(sizeof(jpc_streamlist_t)))) {
+	if (!(streamlist = (jpc_streamlist_t *)jas_malloc(sizeof(jpc_streamlist_t)))) {
 		return 0;
 	}
 	streamlist->numstreams = 0;
@@ -2262,7 +2365,7 @@ jpc_ppxstab_t *jpc_ppxstab_create()
 {
 	jpc_ppxstab_t *tab;
 
-	if (!(tab = jas_malloc(sizeof(jpc_ppxstab_t)))) {
+	if (!(tab = (jpc_ppxstab_t *)jas_malloc(sizeof(jpc_ppxstab_t)))) {
 		return 0;
 	}
 	tab->numents = 0;
@@ -2421,7 +2524,7 @@ int jpc_pptstabwrite(jas_stream_t *out, jpc_ppxstab_t *tab)
 jpc_ppxstabent_t *jpc_ppxstabent_create()
 {
 	jpc_ppxstabent_t *ent;
-	if (!(ent = jas_malloc(sizeof(jpc_ppxstabent_t)))) {
+	if (!(ent = (jpc_ppxstabent_t *)jas_malloc(sizeof(jpc_ppxstabent_t)))) {
 		return 0;
 	}
 	ent->data = 0;
