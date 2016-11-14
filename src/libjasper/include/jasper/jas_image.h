@@ -429,9 +429,15 @@ int jas_image_readcmpt(jas_image_t *image, int cmptno, jas_image_coord_t x,
   jas_image_coord_t y, jas_image_coord_t width, jas_image_coord_t height,
   jas_matrix_t *data);
 
-/* Write a rectangular region of an image component. */
+/* Write a rectangular region to an image component. */
 int jas_image_writecmpt(jas_image_t *image, int cmptno, jas_image_coord_t x,
   jas_image_coord_t y, jas_image_coord_t width, jas_image_coord_t height,
+  jas_matrix_t *data);
+
+/* Write a subset of a rectangular region to an image component. */
+int jas_image_writecmpt_partial(jas_image_t *image, int cmptno, 
+  jas_image_coord_t xdest, jas_image_coord_t ydest, jas_image_coord_t xsrc, 
+  jas_image_coord_t ysrc, jas_image_coord_t width, jas_image_coord_t height, 
   jas_matrix_t *data);
 
 /* Delete a component from an image. */

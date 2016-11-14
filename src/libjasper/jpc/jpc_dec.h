@@ -538,6 +538,12 @@ typedef struct {
 
 typedef struct {
 
+	/* The x-coordinate of the top-left corner of the component. */
+	uint_fast32_t xstart;
+
+	/* The y-coordinate of the top-left corner of the component. */
+	uint_fast32_t ystart;
+
 	/* The horizontal sampling period. */
 	uint_fast32_t hstep;
 
@@ -601,16 +607,14 @@ typedef struct {
 	  top side of the first tile. */
 	uint_fast32_t tileyoff;
 
-	/* The number of tiles spanning the image area in the vertical
-	  direction. */
-	int numhtiles;
-
-	/* The number of tiles spanning the image area in the horizontal
-	  direction. */
-	int numvtiles;
-
 	/* The total number of tiles. */
+	int maxtiles;
+
+	/* The total number of tiles to decode. */
 	int numtiles;
+
+	/* Mapping from tile number to offset in the decode array. */
+	int *tilemap;
 
 	/* The per-tile information. */
 	jpc_dec_tile_t *tiles;
@@ -675,6 +679,22 @@ typedef struct {
 
 	/* The maximum number of packets to decode. */
 	int maxpkts;
+
+	/* The horizontal offset from the origin of the reference grid to the
+	  left edge of the decoded image area, at full resolution. */
+	uint_fast32_t imgareatlx;
+
+	/* The vertical offset from the origin of the reference grid to the
+	  top edge of the decoded image area, at full resolution. */
+	uint_fast32_t imgareatly;
+
+	/* The horizontal offset from the origin of the reference grid to the
+	  right edge of the decoded image area, at full resolution. */
+	uint_fast32_t imgareabrx;
+
+	/* The vertical offset from the origin of the reference grid to the
+	  bottom edge of the decoded image area, at full resolution. */
+	uint_fast32_t imgareabry;
 
 	size_t max_samples;
 
