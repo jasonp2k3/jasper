@@ -613,6 +613,9 @@ typedef struct {
 	/* The total number of tiles to decode. */
 	int numtiles;
 
+	/* The total number of tiles successfully decoded. */
+	int tilesdone;
+
 	/* Mapping from tile number to offset in the decode array. */
 	int *tilemap;
 
