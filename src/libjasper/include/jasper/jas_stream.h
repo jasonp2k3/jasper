@@ -163,6 +163,12 @@ extern "C" {
 /* The maximum number of characters that can always be put back on a stream. */
 #define	JAS_STREAM_MAXPUTBACK	16
 
+typedef enum {
+	JAS_STREAM_SEEKABLE,
+	JAS_STREAM_NONSEEKABLE,
+	JAS_STREAM_SEEKABLE_UNKNOWN
+} jas_seekable_t;
+
 /******************************************************************************\
 * Types.
 \******************************************************************************/
@@ -240,6 +246,8 @@ typedef struct {
 	/* The maximum number of characters that may be read/written. */
 	long rwlimit_;
 
+	/* Whether seek operations are acceptable. */
+	jas_seekable_t seekable_;
 } jas_stream_t;
 
 /*
@@ -385,9 +393,6 @@ int jas_stream_ungetc(jas_stream_t *stream, int c);
 /******************************************************************************\
 * Macros/functions for getting/setting the stream position.
 \******************************************************************************/
-
-/* Is it possible to seek on this stream? */
-int jas_stream_isseekable(jas_stream_t *stream);
 
 /* Set the current position within the stream. */
 long jas_stream_seek(jas_stream_t *stream, long offset, int origin);
