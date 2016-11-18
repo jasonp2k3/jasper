@@ -104,6 +104,7 @@ static void jas_stream_destroy(jas_stream_t *stream);
 static jas_stream_t *jas_stream_create(void);
 static void jas_stream_initbuf(jas_stream_t *stream, int bufmode, char *buf,
   int bufsize);
+static jas_seekable_t jas_stream_isseekable(jas_stream_t *stream);
 
 static int mem_read(jas_stream_obj_t *obj, char *buf, int cnt);
 static int mem_write(jas_stream_obj_t *obj, char *buf, int cnt);
@@ -168,6 +169,7 @@ static jas_stream_t *jas_stream_create()
 	stream->obj_ = 0;
 	stream->rwcnt_ = 0;
 	stream->rwlimit_ = -1;
+	stream->seekable_ = JAS_STREAM_SEEKABLE_UNKNOWN;
 
 	return stream;
 }
@@ -276,6 +278,7 @@ jas_stream_t *jas_stream_memopen2(char *buf, size_t bufsize)
 	/* A stream associated with a memory buffer is always opened
 	for both reading and writing in binary mode. */
 	stream->openmode_ = JAS_STREAM_READ | JAS_STREAM_WRITE | JAS_STREAM_BINARY;
+	stream->seekable_ = JAS_STREAM_SEEKABLE;
 
 	/* Since the stream data is already resident in memory, buffering
 	is not necessary. */
@@ -771,17 +774,27 @@ char *jas_stream_gets(jas_stream_t *stream, char *buf, int bufsize)
 
 int jas_stream_gobble(jas_stream_t *stream, int n)
 {
-	int m;
-
 	JAS_DBGLOG(100, ("jas_stream_gobble(%p, %d)\n", stream, n));
 
 	if (n < 0) {
 		jas_deprecated("negative count for jas_stream_gobble");
 	}
-	m = n;
-	for (m = n; m > 0; --m) {
-		if (jas_stream_getc(stream) == EOF) {
-			return n - m;
+	if (stream->seekable_ == JAS_STREAM_SEEKABLE_UNKNOWN) {
+		stream->seekable_ = jas_stream_isseekable(stream);
+	}
+
+	if (stream->seekable_ == JAS_STREAM_SEEKABLE) {
+		long rwcnt = jas_stream_getrwcount(stream);
+		if (jas_stream_seek(stream, n, SEEK_CUR) < 0) {
+			return 0;
+		}
+		jas_stream_setrwcount(stream, rwcnt + n);
+	} else {
+		int m = n;
+		for (m = n; m > 0; --m) {
+			if (jas_stream_getc(stream) == EOF) {
+				return n - m;
+			}
 		}
 	}
 	return n;
@@ -808,17 +821,17 @@ int jas_stream_pad(jas_stream_t *stream, int n, int c)
 * Code for getting and setting the stream position.
 \******************************************************************************/
 
-int jas_stream_isseekable(jas_stream_t *stream)
+static jas_seekable_t jas_stream_isseekable(jas_stream_t *stream)
 {
 	if (stream->ops_ == &jas_stream_memops) {
-		return 1;
+		return JAS_STREAM_SEEKABLE;
 	} else if (stream->ops_ == &jas_stream_fileops) {
 		if ((*stream->ops_->seek_)(stream->obj_, 0, SEEK_CUR) < 0) {
-			return 0;
+			return JAS_STREAM_NONSEEKABLE;
 		}
-		return 1;
+		return JAS_STREAM_SEEKABLE;
 	} else {
-		return 0;
+		return JAS_STREAM_NONSEEKABLE;
 	}
 }
 
@@ -1180,10 +1193,12 @@ static int mem_read(jas_stream_obj_t *obj, char *buf, int cnt)
 
 	JAS_DBGLOG(100, ("mem_read(%p, %p, %d)\n", obj, buf, cnt));
 	jas_stream_memobj_t *m = (jas_stream_memobj_t *)obj;
-	n = m->len_ - m->pos_;
+	n = JAS_MAX(0, m->len_ - m->pos_);
 	cnt = JAS_MIN(n, cnt);
-	memcpy(buf, &m->buf_[m->pos_], cnt);
-	m->pos_ += cnt;
+	if (cnt) {
+		memcpy(buf, &m->buf_[m->pos_], cnt);
+		m->pos_ += cnt;
+	}
 	return cnt;
 }
 
