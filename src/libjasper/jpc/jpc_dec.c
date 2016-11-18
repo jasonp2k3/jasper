@@ -133,6 +133,14 @@ typedef struct {
 #define	JPC_QCC	0x0008
 
 /******************************************************************************\
+*
+\******************************************************************************/
+
+#define STATUS_CONTINUE 0
+#define STATUS_TRUNCATE 1
+#define STATUS_FINISH   2
+
+/******************************************************************************\
 * Local function prototypes.
 \******************************************************************************/
 
@@ -179,6 +187,7 @@ static jpc_dec_t *jpc_dec_create(jpc_dec_importopts_t *impopts,
 static void jpc_dec_destroy(jpc_dec_t *dec);
 static void jpc_dequantize(jas_matrix_t *x, jpc_fix_t absstepsize);
 static void jpc_undo_roi(jas_matrix_t *x, int roishift, int bgshift, int numbps);
+static int jpc_dec_fini(jpc_dec_t *dec);
 static jpc_fix_t jpc_calcabsstepsize(int stepsize, int numbits);
 static int jpc_dec_tiledecode(jpc_dec_t *dec, jpc_dec_tile_t *tile);
 static int jpc_dec_tileinit(jpc_dec_t *dec, jpc_dec_tile_t *tile);
@@ -457,7 +466,10 @@ static int jpc_dec_decode(jpc_dec_t *dec)
 
 		if (ret < 0) {
 			return -1;
-		} else if (ret > 0) {
+		} else if (ret == STATUS_TRUNCATE) {
+			jpc_dec_fini(dec);
+			break;
+		} else if (ret == STATUS_FINISH) {
 			break;
 		}
 
@@ -506,7 +518,7 @@ static int jpc_dec_process_sot(jpc_dec_t *dec, jpc_ms_t *ms)
 	jpc_dec_cmpt_t *cmpt;
 	int cmptno;
 
-	if (dec->state == JPC_MH) {
+	if (dec->state == JPC_MH && !dec->image) {
 
 		if (!(compinfos = jas_alloc2(dec->numcomps,
 		  sizeof(jas_image_cmptparm_t)))) {
@@ -556,18 +568,22 @@ static int jpc_dec_process_sot(jpc_dec_t *dec, jpc_ms_t *ms)
 		return -1;
 	}
 
-	/* Set the current tile, or fast-forward if the tile
-	   needs to be skipped. */
+	/* Fast-forward if the tile needs to be skipped. */
 	if (dec->tilemap[sot->tileno] < 0) {
 		if (dec->curtileendoff) {
-			int size = dec->curtileendoff - 
+			long size = dec->curtileendoff - 
 			  jas_stream_getrwcount(dec->in);
 			if (jas_stream_gobble(dec->in, size) != size) {
 				return -1;
 			}
+			return 0;
+		} else {
+			/* Last tile-part, stop decoding. */
+			return STATUS_TRUNCATE;
 		}
-		return 0;
 	}
+
+	/* Set the current tile. */
 	tile = dec->curtile = &dec->tiles[dec->tilemap[sot->tileno]];
 	/* Ensure that this is the expected part number. */
 	if (sot->partno != tile->partno) {
@@ -605,7 +621,6 @@ static int jpc_dec_process_sot(jpc_dec_t *dec, jpc_ms_t *ms)
 	/* We should expect to encounter other tile-part header marker
 	  segments next. */
 	dec->state = JPC_TPH;
-
 	return 0;
 }
 
@@ -676,12 +691,7 @@ static int jpc_dec_process_sod(jpc_dec_t *dec, jpc_ms_t *ms)
 			jas_eprintf("warning: ignoring trailing garbage (%lu bytes)\n",
 			  (unsigned long) n);
 
-			while (n-- > 0) {
-				if (jas_stream_getc(dec->in) == EOF) {
-					jas_eprintf("read error\n");
-					return -1;
-				}
-			}
+			jas_stream_gobble(dec->in, n);
 		} else if (curoff > dec->curtileendoff) {
 			jas_eprintf("warning: not enough tile data (%lu bytes)\n",
 			  (unsigned long) curoff - dec->curtileendoff);
@@ -694,6 +704,9 @@ static int jpc_dec_process_sod(jpc_dec_t *dec, jpc_ms_t *ms)
 			return -1;
 		}
 		jpc_dec_tilefini(dec, tile);
+		if (++dec->tilesdone == dec->numtiles) {
+			return STATUS_TRUNCATE;
+		}
 	}
 
 	dec->curtile = 0;
@@ -1244,13 +1257,10 @@ static int jpc_dec_tiledecode(jpc_dec_t *dec, jpc_dec_tile_t *tile)
 	return 0;
 }
 
-static int jpc_dec_process_eoc(jpc_dec_t *dec, jpc_ms_t *ms)
+static int jpc_dec_fini(jpc_dec_t *dec)
 {
 	int tileno;
 	jpc_dec_tile_t *tile;
-
-	/* Eliminate compiler warnings about unused variables. */
-	ms = 0;
 
 	for (tileno = 0, tile = dec->tiles; tileno < dec->numtiles; ++tileno,
 	  ++tile) {
@@ -1260,16 +1270,27 @@ static int jpc_dec_process_eoc(jpc_dec_t *dec, jpc_ms_t *ms)
 			}
 		}
 		/* If the tile has not yet been finalized, finalize it. */
-		// OLD CODE: jpc_dec_tilefini(dec, tile);
 		if (tile->state != JPC_TILE_DONE) {
 			jpc_dec_tilefini(dec, tile);
 		}
 	}
 
+	return 1;
+}
+
+static int jpc_dec_process_eoc(jpc_dec_t *dec, jpc_ms_t *ms)
+{
+	/* Eliminate compiler warnings about unused variables. */
+	ms = 0;
+
+	if (jpc_dec_fini(dec) < 0) {
+		return -1;
+	}
+
 	/* We are done processing the code stream. */
 	dec->state = JPC_MT;
 
-	return 1;
+	return STATUS_FINISH;
 }
 
 static int jpc_dec_process_siz(jpc_dec_t *dec, jpc_ms_t *ms)
@@ -2069,6 +2090,7 @@ static jpc_dec_t *jpc_dec_create(jpc_dec_importopts_t *impopts, jas_stream_t *in
 	dec->tileyoff = 0;
 	dec->maxtiles = 0;
 	dec->numtiles = 0;
+	dec->tilesdone = 0;
 	dec->tilemap = 0;
 	dec->tiles = 0;
 	dec->curtile = 0;
