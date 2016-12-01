@@ -94,54 +94,56 @@
 #define QMFB_SPLITBUFSIZE	4096
 #define	QMFB_JOINBUFSIZE	4096
 
-int jpc_ft_analyze(jpc_fix_t *a, int xstart, int ystart, int width, int height,
+static int jpc_ft_analyze(jpc_fix_t *a, int xstart, int ystart, int width, int height,
   int stride);
-int jpc_ft_synthesize(jpc_fix_t *a, int xstart, int ystart, int width, int height,
+static int jpc_ft_synthesize(jpc_fix_t *a, int xstart, int ystart, int width, int height,
   int stride);
+static int jpc_ft_getbordersize(void);
 
-int jpc_ns_analyze(jpc_fix_t *a, int xstart, int ystart, int width, int height,
+static int jpc_ns_analyze(jpc_fix_t *a, int xstart, int ystart, int width, int height,
   int stride);
-int jpc_ns_synthesize(jpc_fix_t *a, int xstart, int ystart, int width,
+static int jpc_ns_synthesize(jpc_fix_t *a, int xstart, int ystart, int width,
   int height, int stride);
+static int jpc_ns_getbordersize(void);
 
-void jpc_ft_fwdlift_row(jpc_fix_t *a, int numcols, int parity);
-void jpc_ft_fwdlift_col(jpc_fix_t *a, int numrows, int stride,
+static void jpc_ft_fwdlift_row(jpc_fix_t *a, int numcols, int parity);
+static void jpc_ft_fwdlift_col(jpc_fix_t *a, int numrows, int stride,
   int parity);
-void jpc_ft_fwdlift_colgrp(jpc_fix_t *a, int numrows, int stride,
+static void jpc_ft_fwdlift_colgrp(jpc_fix_t *a, int numrows, int stride,
   int parity);
-void jpc_ft_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols,
+static void jpc_ft_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols,
   int stride, int parity);
 
-void jpc_ft_invlift_row(jpc_fix_t *a, int numcols, int parity);
-void jpc_ft_invlift_col(jpc_fix_t *a, int numrows, int stride,
+static void jpc_ft_invlift_row(jpc_fix_t *a, int numcols, int parity);
+static void jpc_ft_invlift_col(jpc_fix_t *a, int numrows, int stride,
   int parity);
-void jpc_ft_invlift_colgrp(jpc_fix_t *a, int numrows, int stride,
+static void jpc_ft_invlift_colgrp(jpc_fix_t *a, int numrows, int stride,
   int parity);
-void jpc_ft_invlift_colres(jpc_fix_t *a, int numrows, int numcols,
+static void jpc_ft_invlift_colres(jpc_fix_t *a, int numrows, int numcols,
   int stride, int parity);
 
-void jpc_ns_fwdlift_row(jpc_fix_t *a, int numcols, int parity);
-void jpc_ns_fwdlift_colgrp(jpc_fix_t *a, int numrows, int stride, int parity);
-void jpc_ns_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
+static void jpc_ns_fwdlift_row(jpc_fix_t *a, int numcols, int parity);
+static void jpc_ns_fwdlift_colgrp(jpc_fix_t *a, int numrows, int stride, int parity);
+static void jpc_ns_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
   int parity);
-void jpc_ns_invlift_row(jpc_fix_t *a, int numcols, int parity);
-void jpc_ns_invlift_colgrp(jpc_fix_t *a, int numrows, int stride, int parity);
-void jpc_ns_invlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
-  int parity);
-
-void jpc_qmfb_split_row(jpc_fix_t *a, int numcols, int parity);
-void jpc_qmfb_split_col(jpc_fix_t *a, int numrows, int stride, int parity);
-void jpc_qmfb_split_colgrp(jpc_fix_t *a, int numrows, int stride, int parity);
-void jpc_qmfb_split_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
+static void jpc_ns_invlift_row(jpc_fix_t *a, int numcols, int parity);
+static void jpc_ns_invlift_colgrp(jpc_fix_t *a, int numrows, int stride, int parity);
+static void jpc_ns_invlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
   int parity);
 
-void jpc_qmfb_join_row(jpc_fix_t *a, int numcols, int parity);
-void jpc_qmfb_join_col(jpc_fix_t *a, int numrows, int stride, int parity);
-void jpc_qmfb_join_colgrp(jpc_fix_t *a, int numrows, int stride, int parity);
-void jpc_qmfb_join_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
+static void jpc_qmfb_split_row(jpc_fix_t *a, int numcols, int parity);
+static void jpc_qmfb_split_col(jpc_fix_t *a, int numrows, int stride, int parity);
+static void jpc_qmfb_split_colgrp(jpc_fix_t *a, int numrows, int stride, int parity);
+static void jpc_qmfb_split_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
   int parity);
 
-double jpc_ft_lpenergywts[32] = {
+static void jpc_qmfb_join_row(jpc_fix_t *a, int numcols, int parity);
+static void jpc_qmfb_join_col(jpc_fix_t *a, int numrows, int stride, int parity);
+static void jpc_qmfb_join_colgrp(jpc_fix_t *a, int numrows, int stride, int parity);
+static void jpc_qmfb_join_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
+  int parity);
+
+static double jpc_ft_lpenergywts[32] = {
 	1.2247448713915889,
 	1.6583123951776999,
 	2.3184046238739260,
@@ -177,7 +179,7 @@ double jpc_ft_lpenergywts[32] = {
 	836.0924988714708661
 };
 
-double jpc_ft_hpenergywts[32] = {
+static double jpc_ft_hpenergywts[32] = {
 	0.8477912478906585,
 	0.9601432184835760,
 	1.2593401049756179,
@@ -213,7 +215,7 @@ double jpc_ft_hpenergywts[32] = {
 	443.4050067351659550
 };
 
-double jpc_ns_lpenergywts[32] = {
+static double jpc_ns_lpenergywts[32] = {
 	1.4021081679297411,
 	2.0303718560817923,
 	2.9011625562785555,
@@ -249,7 +251,7 @@ double jpc_ns_lpenergywts[32] = {
 	1054.6323278917823245
 };
 
-double jpc_ns_hpenergywts[32] = {
+static double jpc_ns_hpenergywts[32] = {
 	1.4425227650161456,
 	1.9669426082455688,
 	2.8839248082788891,
@@ -287,6 +289,7 @@ double jpc_ns_hpenergywts[32] = {
 jpc_qmfb2d_t jpc_ft_qmfb2d = {
 	jpc_ft_analyze,
 	jpc_ft_synthesize,
+	jpc_ft_getbordersize,
 	jpc_ft_lpenergywts,
 	jpc_ft_hpenergywts
 };
@@ -294,6 +297,7 @@ jpc_qmfb2d_t jpc_ft_qmfb2d = {
 jpc_qmfb2d_t jpc_ns_qmfb2d = {
 	jpc_ns_analyze,
 	jpc_ns_synthesize,
+	jpc_ns_getbordersize,
 	jpc_ns_lpenergywts,
 	jpc_ns_hpenergywts
 };
@@ -302,16 +306,16 @@ jpc_qmfb2d_t jpc_ns_qmfb2d = {
 * generic
 \******************************************************************************/
 
-void jpc_qmfb_split_row(jpc_fix_t *a, int numcols, int parity)
+static void jpc_qmfb_split_row(jpc_fix_t *a, int numcols, int parity)
 {
 
 	int bufsize = JPC_CEILDIVPOW2(numcols, 1);
 	jpc_fix_t splitbuf[QMFB_SPLITBUFSIZE];
 	jpc_fix_t *buf = splitbuf;
-	register jpc_fix_t *srcptr;
-	register jpc_fix_t *dstptr;
-	register int n;
-	register int m;
+	jpc_fix_t *srcptr;
+	jpc_fix_t *dstptr;
+	int n;
+	int m;
 	int hstartcol;
 
 	/* Get a buffer. */
@@ -324,7 +328,6 @@ void jpc_qmfb_split_row(jpc_fix_t *a, int numcols, int parity)
 
 	if (numcols >= 2) {
 		hstartcol = (numcols + 1 - parity) >> 1;
-		// ORIGINAL (WRONG): m = (parity) ? hstartcol : (numcols - hstartcol);
 		m = numcols - hstartcol;
 
 		/* Save the samples destined for the highpass channel. */
@@ -363,17 +366,17 @@ void jpc_qmfb_split_row(jpc_fix_t *a, int numcols, int parity)
 
 }
 
-void jpc_qmfb_split_col(jpc_fix_t *a, int numrows, int stride,
+static void jpc_qmfb_split_col(jpc_fix_t *a, int numrows, int stride,
   int parity)
 {
 
 	int bufsize = JPC_CEILDIVPOW2(numrows, 1);
 	jpc_fix_t splitbuf[QMFB_SPLITBUFSIZE];
 	jpc_fix_t *buf = splitbuf;
-	register jpc_fix_t *srcptr;
-	register jpc_fix_t *dstptr;
-	register int n;
-	register int m;
+	jpc_fix_t *srcptr;
+	jpc_fix_t *dstptr;
+	int n;
+	int m;
 	int hstartrow;
 
 	/* Get a buffer. */
@@ -386,7 +389,6 @@ void jpc_qmfb_split_col(jpc_fix_t *a, int numrows, int stride,
 
 	if (numrows >= 2) {
 		hstartrow = (numrows + 1 - parity) >> 1;
-		// ORIGINAL (WRONG): m = (parity) ? hstartrow : (numrows - hstartrow);
 		m = numrows - hstartrow;
 
 		/* Save the samples destined for the highpass channel. */
@@ -425,7 +427,7 @@ void jpc_qmfb_split_col(jpc_fix_t *a, int numrows, int stride,
 
 }
 
-void jpc_qmfb_split_colgrp(jpc_fix_t *a, int numrows, int stride,
+static void jpc_qmfb_split_colgrp(jpc_fix_t *a, int numrows, int stride,
   int parity)
 {
 
@@ -434,10 +436,10 @@ void jpc_qmfb_split_colgrp(jpc_fix_t *a, int numrows, int stride,
 	jpc_fix_t *buf = splitbuf;
 	jpc_fix_t *srcptr;
 	jpc_fix_t *dstptr;
-	register jpc_fix_t *srcptr2;
-	register jpc_fix_t *dstptr2;
-	register int n;
-	register int i;
+	jpc_fix_t *srcptr2;
+	jpc_fix_t *dstptr2;
+	int n;
+	int i;
 	int m;
 	int hstartrow;
 
@@ -452,7 +454,6 @@ void jpc_qmfb_split_colgrp(jpc_fix_t *a, int numrows, int stride,
 
 	if (numrows >= 2) {
 		hstartrow = (numrows + 1 - parity) >> 1;
-		// ORIGINAL (WRONG): m = (parity) ? hstartrow : (numrows - hstartrow);
 		m = numrows - hstartrow;
 
 		/* Save the samples destined for the highpass channel. */
@@ -509,7 +510,7 @@ void jpc_qmfb_split_colgrp(jpc_fix_t *a, int numrows, int stride,
 
 }
 
-void jpc_qmfb_split_colres(jpc_fix_t *a, int numrows, int numcols,
+static void jpc_qmfb_split_colres(jpc_fix_t *a, int numrows, int numcols,
   int stride, int parity)
 {
 
@@ -518,10 +519,10 @@ void jpc_qmfb_split_colres(jpc_fix_t *a, int numrows, int numcols,
 	jpc_fix_t *buf = splitbuf;
 	jpc_fix_t *srcptr;
 	jpc_fix_t *dstptr;
-	register jpc_fix_t *srcptr2;
-	register jpc_fix_t *dstptr2;
-	register int n;
-	register int i;
+	jpc_fix_t *srcptr2;
+	jpc_fix_t *dstptr2;
+	int n;
+	int i;
 	int m;
 	int hstartcol;
 
@@ -535,7 +536,6 @@ void jpc_qmfb_split_colres(jpc_fix_t *a, int numrows, int numcols,
 
 	if (numrows >= 2) {
 		hstartcol = (numrows + 1 - parity) >> 1;
-		// ORIGINAL (WRONG): m = (parity) ? hstartcol : (numrows - hstartcol);
 		m = numrows - hstartcol;
 
 		/* Save the samples destined for the highpass channel. */
@@ -592,15 +592,15 @@ void jpc_qmfb_split_colres(jpc_fix_t *a, int numrows, int numcols,
 
 }
 
-void jpc_qmfb_join_row(jpc_fix_t *a, int numcols, int parity)
+static void jpc_qmfb_join_row(jpc_fix_t *a, int numcols, int parity)
 {
 
 	int bufsize = JPC_CEILDIVPOW2(numcols, 1);
 	jpc_fix_t joinbuf[QMFB_JOINBUFSIZE];
 	jpc_fix_t *buf = joinbuf;
-	register jpc_fix_t *srcptr;
-	register jpc_fix_t *dstptr;
-	register int n;
+	jpc_fix_t *srcptr;
+	jpc_fix_t *dstptr;
+	int n;
 	int hstartcol;
 
 	/* Allocate memory for the join buffer from the heap. */
@@ -648,16 +648,16 @@ void jpc_qmfb_join_row(jpc_fix_t *a, int numcols, int parity)
 
 }
 
-void jpc_qmfb_join_col(jpc_fix_t *a, int numrows, int stride,
+static void jpc_qmfb_join_col(jpc_fix_t *a, int numrows, int stride,
   int parity)
 {
 
 	int bufsize = JPC_CEILDIVPOW2(numrows, 1);
 	jpc_fix_t joinbuf[QMFB_JOINBUFSIZE];
 	jpc_fix_t *buf = joinbuf;
-	register jpc_fix_t *srcptr;
-	register jpc_fix_t *dstptr;
-	register int n;
+	jpc_fix_t *srcptr;
+	jpc_fix_t *dstptr;
+	int n;
 	int hstartcol;
 
 	/* Allocate memory for the join buffer from the heap. */
@@ -705,7 +705,7 @@ void jpc_qmfb_join_col(jpc_fix_t *a, int numrows, int stride,
 
 }
 
-void jpc_qmfb_join_colgrp(jpc_fix_t *a, int numrows, int stride,
+static void jpc_qmfb_join_colgrp(jpc_fix_t *a, int numrows, int stride,
   int parity)
 {
 
@@ -714,10 +714,10 @@ void jpc_qmfb_join_colgrp(jpc_fix_t *a, int numrows, int stride,
 	jpc_fix_t *buf = joinbuf;
 	jpc_fix_t *srcptr;
 	jpc_fix_t *dstptr;
-	register jpc_fix_t *srcptr2;
-	register jpc_fix_t *dstptr2;
-	register int n;
-	register int i;
+	jpc_fix_t *srcptr2;
+	jpc_fix_t *dstptr2;
+	int n;
+	int i;
 	int hstartcol;
 
 	/* Allocate memory for the join buffer from the heap. */
@@ -784,7 +784,7 @@ void jpc_qmfb_join_colgrp(jpc_fix_t *a, int numrows, int stride,
 
 }
 
-void jpc_qmfb_join_colres(jpc_fix_t *a, int numrows, int numcols,
+static void jpc_qmfb_join_colres(jpc_fix_t *a, int numrows, int numcols,
   int stride, int parity)
 {
 
@@ -793,10 +793,10 @@ void jpc_qmfb_join_colres(jpc_fix_t *a, int numrows, int numcols,
 	jpc_fix_t *buf = joinbuf;
 	jpc_fix_t *srcptr;
 	jpc_fix_t *dstptr;
-	register jpc_fix_t *srcptr2;
-	register jpc_fix_t *dstptr2;
-	register int n;
-	register int i;
+	jpc_fix_t *srcptr2;
+	jpc_fix_t *dstptr2;
+	int n;
+	int i;
 	int hstartcol;
 
 	/* Allocate memory for the join buffer from the heap. */
@@ -866,12 +866,17 @@ void jpc_qmfb_join_colres(jpc_fix_t *a, int numrows, int numcols,
 * 5/3 transform
 \******************************************************************************/
 
-void jpc_ft_fwdlift_row(jpc_fix_t *a, int numcols, int parity)
+static int jpc_ft_getbordersize(void)
+{
+	return 1;
+}
+
+static void jpc_ft_fwdlift_row(jpc_fix_t *a, int numcols, int parity)
 {
 
-	register jpc_fix_t *lptr;
-	register jpc_fix_t *hptr;
-	register int n;
+	jpc_fix_t *lptr;
+	jpc_fix_t *hptr;
+	int n;
 	int llen;
 
 	llen = (numcols + 1 - parity) >> 1;
@@ -887,7 +892,6 @@ void jpc_ft_fwdlift_row(jpc_fix_t *a, int numcols, int parity)
 		}
 		n = numcols - llen - parity - (parity == (numcols & 1));
 		while (n-- > 0) {
-			//hptr[0] -= (lptr[0] + lptr[1]) >> 1;
 			hptr[0] -= jpc_fix_asr(lptr[0] + lptr[1], 1);
 			++hptr;
 			++lptr;
@@ -900,19 +904,16 @@ void jpc_ft_fwdlift_row(jpc_fix_t *a, int numcols, int parity)
 		lptr = &a[0];
 		hptr = &a[llen];
 		if (!parity) {
-			//lptr[0] += (hptr[0] + 1) >> 1;
 			lptr[0] += jpc_fix_asr(hptr[0] + 1, 1);
 			++lptr;
 		}
 		n = llen - (!parity) - (parity != (numcols & 1));
 		while (n-- > 0) {
-			//lptr[0] += (hptr[0] + hptr[1] + 2) >> 2;
 			lptr[0] += jpc_fix_asr(hptr[0] + hptr[1] + 2, 2);
 			++lptr;
 			++hptr;
 		}
 		if (parity != (numcols & 1)) {
-			//lptr[0] += (hptr[0] + 1) >> 1;
 			lptr[0] += jpc_fix_asr(hptr[0] + 1, 1);
 		}
 
@@ -920,7 +921,6 @@ void jpc_ft_fwdlift_row(jpc_fix_t *a, int numcols, int parity)
 
 		if (parity) {
 			lptr = &a[0];
-			//lptr[0] <<= 1;
 			lptr[0] = jpc_fix_asl(lptr[0], 1);
 		}
 
@@ -928,17 +928,13 @@ void jpc_ft_fwdlift_row(jpc_fix_t *a, int numcols, int parity)
 
 }
 
-void jpc_ft_fwdlift_col(jpc_fix_t *a, int numrows, int stride, int parity)
+static void jpc_ft_fwdlift_col(jpc_fix_t *a, int numrows, int stride, 
+  int parity)
 {
 
 	jpc_fix_t *lptr;
 	jpc_fix_t *hptr;
-#if 0
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int i;
-#endif
-	register int n;
+	int n;
 	int llen;
 
 	llen = (numrows + 1 - parity) >> 1;
@@ -954,7 +950,6 @@ void jpc_ft_fwdlift_col(jpc_fix_t *a, int numrows, int stride, int parity)
 		}
 		n = numrows - llen - parity - (parity == (numrows & 1));
 		while (n-- > 0) {
-			//hptr[0] -= (lptr[0] + lptr[stride]) >> 1;
 			hptr[0] -= jpc_fix_asr(lptr[0] + lptr[stride], 1);
 			hptr += stride;
 			lptr += stride;
@@ -967,19 +962,16 @@ void jpc_ft_fwdlift_col(jpc_fix_t *a, int numrows, int stride, int parity)
 		lptr = &a[0];
 		hptr = &a[llen * stride];
 		if (!parity) {
-			//lptr[0] += (hptr[0] + 1) >> 1;
 			lptr[0] += jpc_fix_asr(hptr[0] + 1, 1);
 			lptr += stride;
 		}
 		n = llen - (!parity) - (parity != (numrows & 1));
 		while (n-- > 0) {
-			//lptr[0] += (hptr[0] + hptr[stride] + 2) >> 2;
 			lptr[0] += jpc_fix_asr(hptr[0] + hptr[stride] + 2, 2);
 			lptr += stride;
 			hptr += stride;
 		}
 		if (parity != (numrows & 1)) {
-			//lptr[0] += (hptr[0] + 1) >> 1;
 			lptr[0] += jpc_fix_asr(hptr[0] + 1, 1);
 		}
 
@@ -987,7 +979,6 @@ void jpc_ft_fwdlift_col(jpc_fix_t *a, int numrows, int stride, int parity)
 
 		if (parity) {
 			lptr = &a[0];
-			//lptr[0] <<= 1;
 			lptr[0] = jpc_fix_asl(lptr[0], 1);
 		}
 
@@ -995,120 +986,116 @@ void jpc_ft_fwdlift_col(jpc_fix_t *a, int numrows, int stride, int parity)
 
 }
 
-void jpc_ft_fwdlift_colgrp(jpc_fix_t *a, int numrows, int stride, int parity)
-{
-
-	jpc_fix_t *lptr;
-	jpc_fix_t *hptr;
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int n;
-	register int i;
-	int llen;
-
-	llen = (numrows + 1 - parity) >> 1;
-
-	if (numrows > 1) {
-
-		/* Apply the first lifting step. */
-		lptr = &a[0];
-		hptr = &a[llen * stride];
-		if (parity) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				hptr2[0] -= lptr2[0];
-				++hptr2;
-				++lptr2;
-			}
-			hptr += stride;
-		}
-		n = numrows - llen - parity - (parity == (numrows & 1));
-		while (n-- > 0) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//hptr2[0] -= (lptr2[0] + lptr2[stride]) >> 1;
-				hptr2[0] -= jpc_fix_asr(lptr2[0] + lptr2[stride], 1);
-				++lptr2;
-				++hptr2;
-			}
-			hptr += stride;
-			lptr += stride;
-		}
-		if (parity == (numrows & 1)) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				hptr2[0] -= lptr2[0];
-				++lptr2;
-				++hptr2;
-			}
-		}
-
-		/* Apply the second lifting step. */
-		lptr = &a[0];
-		hptr = &a[llen * stride];
-		if (!parity) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//lptr2[0] += (hptr2[0] + 1) >> 1;
-				lptr2[0] += jpc_fix_asr(hptr2[0] + 1, 1);
-				++lptr2;
-				++hptr2;
-			}
-			lptr += stride;
-		}
-		n = llen - (!parity) - (parity != (numrows & 1));
-		while (n-- > 0) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//lptr2[0] += (hptr2[0] + hptr2[stride] + 2) >> 2;
-				lptr2[0] += jpc_fix_asr(hptr2[0] + hptr2[stride] + 2, 2);
-				++lptr2;
-				++hptr2;
-			}
-			lptr += stride;
-			hptr += stride;
-		}
-		if (parity != (numrows & 1)) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//lptr2[0] += (hptr2[0] + 1) >> 1;
-				lptr2[0] += jpc_fix_asr(hptr2[0] + 1, 1);
-				++lptr2;
-				++hptr2;
-			}
-		}
-
-	} else {
-
-		if (parity) {
-			lptr2 = &a[0];
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//lptr2[0] <<= 1;
-				lptr2[0] = jpc_fix_asl(lptr2[0], 1);
-				++lptr2;
-			}
-		}
-
-	}
-
-}
-
-void jpc_ft_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
+static void jpc_ft_fwdlift_colgrp(jpc_fix_t *a, int numrows, int stride, 
   int parity)
 {
 
 	jpc_fix_t *lptr;
 	jpc_fix_t *hptr;
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int n;
-	register int i;
+	jpc_fix_t *lptr2;
+	jpc_fix_t *hptr2;
+	int n;
+	int i;
+	int llen;
+
+	llen = (numrows + 1 - parity) >> 1;
+
+	if (numrows > 1) {
+
+		/* Apply the first lifting step. */
+		lptr = &a[0];
+		hptr = &a[llen * stride];
+		if (parity) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				hptr2[0] -= lptr2[0];
+				++hptr2;
+				++lptr2;
+			}
+			hptr += stride;
+		}
+		n = numrows - llen - parity - (parity == (numrows & 1));
+		while (n-- > 0) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				hptr2[0] -= jpc_fix_asr(lptr2[0] + lptr2[stride], 1);
+				++lptr2;
+				++hptr2;
+			}
+			hptr += stride;
+			lptr += stride;
+		}
+		if (parity == (numrows & 1)) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				hptr2[0] -= lptr2[0];
+				++lptr2;
+				++hptr2;
+			}
+		}
+
+		/* Apply the second lifting step. */
+		lptr = &a[0];
+		hptr = &a[llen * stride];
+		if (!parity) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				lptr2[0] += jpc_fix_asr(hptr2[0] + 1, 1);
+				++lptr2;
+				++hptr2;
+			}
+			lptr += stride;
+		}
+		n = llen - (!parity) - (parity != (numrows & 1));
+		while (n-- > 0) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				lptr2[0] += jpc_fix_asr(hptr2[0] + hptr2[stride] + 2, 2);
+				++lptr2;
+				++hptr2;
+			}
+			lptr += stride;
+			hptr += stride;
+		}
+		if (parity != (numrows & 1)) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				lptr2[0] += jpc_fix_asr(hptr2[0] + 1, 1);
+				++lptr2;
+				++hptr2;
+			}
+		}
+
+	} else {
+
+		if (parity) {
+			lptr2 = &a[0];
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				lptr2[0] = jpc_fix_asl(lptr2[0], 1);
+				++lptr2;
+			}
+		}
+
+	}
+
+}
+
+static void jpc_ft_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols, 
+  int stride, int parity)
+{
+
+	jpc_fix_t *lptr;
+	jpc_fix_t *hptr;
+	jpc_fix_t *lptr2;
+	jpc_fix_t *hptr2;
+	int n;
+	int i;
 	int llen;
 
 	llen = (numrows + 1 - parity) >> 1;
@@ -1133,7 +1120,6 @@ void jpc_ft_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 			lptr2 = lptr;
 			hptr2 = hptr;
 			for (i = 0; i < numcols; ++i) {
-				//hptr2[0] -= (lptr2[0] + lptr2[stride]) >> 1;
 				hptr2[0] -= jpc_fix_asr(lptr2[0] + lptr2[stride], 1);
 				++lptr2;
 				++hptr2;
@@ -1158,7 +1144,6 @@ void jpc_ft_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 			lptr2 = lptr;
 			hptr2 = hptr;
 			for (i = 0; i < numcols; ++i) {
-				//lptr2[0] += (hptr2[0] + 1) >> 1;
 				lptr2[0] += jpc_fix_asr(hptr2[0] + 1, 1);
 				++lptr2;
 				++hptr2;
@@ -1170,7 +1155,6 @@ void jpc_ft_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 			lptr2 = lptr;
 			hptr2 = hptr;
 			for (i = 0; i < numcols; ++i) {
-				//lptr2[0] += (hptr2[0] + hptr2[stride] + 2) >> 2;
 				lptr2[0] += jpc_fix_asr(hptr2[0] + hptr2[stride] + 2, 2);
 				++lptr2;
 				++hptr2;
@@ -1182,7 +1166,6 @@ void jpc_ft_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 			lptr2 = lptr;
 			hptr2 = hptr;
 			for (i = 0; i < numcols; ++i) {
-				//lptr2[0] += (hptr2[0] + 1) >> 1;
 				lptr2[0] += jpc_fix_asr(hptr2[0] + 1, 1);
 				++lptr2;
 				++hptr2;
@@ -1194,7 +1177,6 @@ void jpc_ft_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 		if (parity) {
 			lptr2 = &a[0];
 			for (i = 0; i < numcols; ++i) {
-				//lptr2[0] <<= 1;
 				lptr2[0] = jpc_fix_asl(lptr2[0], 1);
 				++lptr2;
 			}
@@ -1204,12 +1186,12 @@ void jpc_ft_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 
 }
 
-void jpc_ft_invlift_row(jpc_fix_t *a, int numcols, int parity)
+static void jpc_ft_invlift_row(jpc_fix_t *a, int numcols, int parity)
 {
 
-	register jpc_fix_t *lptr;
-	register jpc_fix_t *hptr;
-	register int n;
+	jpc_fix_t *lptr;
+	jpc_fix_t *hptr;
+	int n;
 	int llen;
 
 	llen = (numcols + 1 - parity) >> 1;
@@ -1220,19 +1202,16 @@ void jpc_ft_invlift_row(jpc_fix_t *a, int numcols, int parity)
 		lptr = &a[0];
 		hptr = &a[llen];
 		if (!parity) {
-			//lptr[0] -= (hptr[0] + 1) >> 1;
 			lptr[0] -= jpc_fix_asr(hptr[0] + 1, 1);
 			++lptr;
 		}
 		n = llen - (!parity) - (parity != (numcols & 1));
 		while (n-- > 0) {
-			//lptr[0] -= (hptr[0] + hptr[1] + 2) >> 2;
 			lptr[0] -= jpc_fix_asr(hptr[0] + hptr[1] + 2, 2);
 			++lptr;
 			++hptr;
 		}
 		if (parity != (numcols & 1)) {
-			//lptr[0] -= (hptr[0] + 1) >> 1;
 			lptr[0] -= jpc_fix_asr(hptr[0] + 1, 1);
 		}
 
@@ -1245,7 +1224,6 @@ void jpc_ft_invlift_row(jpc_fix_t *a, int numcols, int parity)
 		}
 		n = numcols - llen - parity - (parity == (numcols & 1));
 		while (n-- > 0) {
-			//hptr[0] += (lptr[0] + lptr[1]) >> 1;
 			hptr[0] += jpc_fix_asr(lptr[0] + lptr[1], 1);
 			++hptr;
 			++lptr;
@@ -1258,7 +1236,6 @@ void jpc_ft_invlift_row(jpc_fix_t *a, int numcols, int parity)
 
 		if (parity) {
 			lptr = &a[0];
-			//lptr[0] >>= 1;
 			lptr[0] = jpc_fix_asr(lptr[0], 1);
 		}
 
@@ -1266,17 +1243,13 @@ void jpc_ft_invlift_row(jpc_fix_t *a, int numcols, int parity)
 
 }
 
-void jpc_ft_invlift_col(jpc_fix_t *a, int numrows, int stride, int parity)
+static void jpc_ft_invlift_col(jpc_fix_t *a, int numrows, int stride, 
+  int parity)
 {
 
 	jpc_fix_t *lptr;
 	jpc_fix_t *hptr;
-#if 0
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int i;
-#endif
-	register int n;
+	int n;
 	int llen;
 
 	llen = (numrows + 1 - parity) >> 1;
@@ -1287,19 +1260,16 @@ void jpc_ft_invlift_col(jpc_fix_t *a, int numrows, int stride, int parity)
 		lptr = &a[0];
 		hptr = &a[llen * stride];
 		if (!parity) {
-			//lptr[0] -= (hptr[0] + 1) >> 1;
 			lptr[0] -= jpc_fix_asr(hptr[0] + 1, 1);
 			lptr += stride;
 		}
 		n = llen - (!parity) - (parity != (numrows & 1));
 		while (n-- > 0) {
-			//lptr[0] -= (hptr[0] + hptr[stride] + 2) >> 2;
 			lptr[0] -= jpc_fix_asr(hptr[0] + hptr[stride] + 2, 2);
 			lptr += stride;
 			hptr += stride;
 		}
 		if (parity != (numrows & 1)) {
-			//lptr[0] -= (hptr[0] + 1) >> 1;
 			lptr[0] -= jpc_fix_asr(hptr[0] + 1, 1);
 		}
 
@@ -1312,7 +1282,6 @@ void jpc_ft_invlift_col(jpc_fix_t *a, int numrows, int stride, int parity)
 		}
 		n = numrows - llen - parity - (parity == (numrows & 1));
 		while (n-- > 0) {
-			//hptr[0] += (lptr[0] + lptr[stride]) >> 1;
 			hptr[0] += jpc_fix_asr(lptr[0] + lptr[stride], 1);
 			hptr += stride;
 			lptr += stride;
@@ -1325,7 +1294,6 @@ void jpc_ft_invlift_col(jpc_fix_t *a, int numrows, int stride, int parity)
 
 		if (parity) {
 			lptr = &a[0];
-			//lptr[0] >>= 1;
 			lptr[0] = jpc_fix_asr(lptr[0], 1);
 		}
 
@@ -1333,120 +1301,116 @@ void jpc_ft_invlift_col(jpc_fix_t *a, int numrows, int stride, int parity)
 
 }
 
-void jpc_ft_invlift_colgrp(jpc_fix_t *a, int numrows, int stride, int parity)
-{
-
-	jpc_fix_t *lptr;
-	jpc_fix_t *hptr;
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int n;
-	register int i;
-	int llen;
-
-	llen = (numrows + 1 - parity) >> 1;
-
-	if (numrows > 1) {
-
-		/* Apply the first lifting step. */
-		lptr = &a[0];
-		hptr = &a[llen * stride];
-		if (!parity) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//lptr2[0] -= (hptr2[0] + 1) >> 1;
-				lptr2[0] -= jpc_fix_asr(hptr2[0] + 1, 1);
-				++lptr2;
-				++hptr2;
-			}
-			lptr += stride;
-		}
-		n = llen - (!parity) - (parity != (numrows & 1));
-		while (n-- > 0) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//lptr2[0] -= (hptr2[0] + hptr2[stride] + 2) >> 2;
-				lptr2[0] -= jpc_fix_asr(hptr2[0] + hptr2[stride] + 2, 2);
-				++lptr2;
-				++hptr2;
-			}
-			lptr += stride;
-			hptr += stride;
-		}
-		if (parity != (numrows & 1)) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//lptr2[0] -= (hptr2[0] + 1) >> 1;
-				lptr2[0] -= jpc_fix_asr(hptr2[0] + 1, 1);
-				++lptr2;
-				++hptr2;
-			}
-		}
-
-		/* Apply the second lifting step. */
-		lptr = &a[0];
-		hptr = &a[llen * stride];
-		if (parity) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				hptr2[0] += lptr2[0];
-				++hptr2;
-				++lptr2;
-			}
-			hptr += stride;
-		}
-		n = numrows - llen - parity - (parity == (numrows & 1));
-		while (n-- > 0) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//hptr2[0] += (lptr2[0] + lptr2[stride]) >> 1;
-				hptr2[0] += jpc_fix_asr(lptr2[0] + lptr2[stride], 1);
-				++lptr2;
-				++hptr2;
-			}
-			hptr += stride;
-			lptr += stride;
-		}
-		if (parity == (numrows & 1)) {
-			lptr2 = lptr;
-			hptr2 = hptr;
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				hptr2[0] += lptr2[0];
-				++lptr2;
-				++hptr2;
-			}
-		}
-
-	} else {
-
-		if (parity) {
-			lptr2 = &a[0];
-			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//lptr2[0] >>= 1;
-				lptr2[0] = jpc_fix_asr(lptr2[0], 1);
-				++lptr2;
-			}
-		}
-
-	}
-
-}
-
-void jpc_ft_invlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
+static void jpc_ft_invlift_colgrp(jpc_fix_t *a, int numrows, int stride, 
   int parity)
 {
 
 	jpc_fix_t *lptr;
 	jpc_fix_t *hptr;
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int n;
-	register int i;
+	jpc_fix_t *lptr2;
+	jpc_fix_t *hptr2;
+	int n;
+	int i;
+	int llen;
+
+	llen = (numrows + 1 - parity) >> 1;
+
+	if (numrows > 1) {
+
+		/* Apply the first lifting step. */
+		lptr = &a[0];
+		hptr = &a[llen * stride];
+		if (!parity) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				lptr2[0] -= jpc_fix_asr(hptr2[0] + 1, 1);
+				++lptr2;
+				++hptr2;
+			}
+			lptr += stride;
+		}
+		n = llen - (!parity) - (parity != (numrows & 1));
+		while (n-- > 0) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				lptr2[0] -= jpc_fix_asr(hptr2[0] + hptr2[stride] + 2, 2);
+				++lptr2;
+				++hptr2;
+			}
+			lptr += stride;
+			hptr += stride;
+		}
+		if (parity != (numrows & 1)) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				lptr2[0] -= jpc_fix_asr(hptr2[0] + 1, 1);
+				++lptr2;
+				++hptr2;
+			}
+		}
+
+		/* Apply the second lifting step. */
+		lptr = &a[0];
+		hptr = &a[llen * stride];
+		if (parity) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				hptr2[0] += lptr2[0];
+				++hptr2;
+				++lptr2;
+			}
+			hptr += stride;
+		}
+		n = numrows - llen - parity - (parity == (numrows & 1));
+		while (n-- > 0) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				hptr2[0] += jpc_fix_asr(lptr2[0] + lptr2[stride], 1);
+				++lptr2;
+				++hptr2;
+			}
+			hptr += stride;
+			lptr += stride;
+		}
+		if (parity == (numrows & 1)) {
+			lptr2 = lptr;
+			hptr2 = hptr;
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				hptr2[0] += lptr2[0];
+				++lptr2;
+				++hptr2;
+			}
+		}
+
+	} else {
+
+		if (parity) {
+			lptr2 = &a[0];
+			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
+				lptr2[0] = jpc_fix_asr(lptr2[0], 1);
+				++lptr2;
+			}
+		}
+
+	}
+
+}
+
+static void jpc_ft_invlift_colres(jpc_fix_t *a, int numrows, int numcols, 
+  int stride, int parity)
+{
+
+	jpc_fix_t *lptr;
+	jpc_fix_t *hptr;
+	jpc_fix_t *lptr2;
+	jpc_fix_t *hptr2;
+	int n;
+	int i;
 	int llen;
 
 	llen = (numrows + 1 - parity) >> 1;
@@ -1460,7 +1424,6 @@ void jpc_ft_invlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 			lptr2 = lptr;
 			hptr2 = hptr;
 			for (i = 0; i < numcols; ++i) {
-				//lptr2[0] -= (hptr2[0] + 1) >> 1;
 				lptr2[0] -= jpc_fix_asr(hptr2[0] + 1, 1);
 				++lptr2;
 				++hptr2;
@@ -1472,7 +1435,6 @@ void jpc_ft_invlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 			lptr2 = lptr;
 			hptr2 = hptr;
 			for (i = 0; i < numcols; ++i) {
-				//lptr2[0] -= (hptr2[0] + hptr2[stride] + 2) >> 2;
 				lptr2[0] -= jpc_fix_asr(hptr2[0] + hptr2[stride] + 2, 2);
 				++lptr2;
 				++hptr2;
@@ -1484,7 +1446,6 @@ void jpc_ft_invlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 			lptr2 = lptr;
 			hptr2 = hptr;
 			for (i = 0; i < numcols; ++i) {
-				//lptr2[0] -= (hptr2[0] + 1) >> 1;
 				lptr2[0] -= jpc_fix_asr(hptr2[0] + 1, 1);
 				++lptr2;
 				++hptr2;
@@ -1509,7 +1470,6 @@ void jpc_ft_invlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 			lptr2 = lptr;
 			hptr2 = hptr;
 			for (i = 0; i < numcols; ++i) {
-				//hptr2[0] += (lptr2[0] + lptr2[stride]) >> 1;
 				hptr2[0] += jpc_fix_asr(lptr2[0] + lptr2[stride], 1);
 				++lptr2;
 				++hptr2;
@@ -1532,7 +1492,6 @@ void jpc_ft_invlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 		if (parity) {
 			lptr2 = &a[0];
 			for (i = 0; i < numcols; ++i) {
-				//lptr2[0] >>= 1;
 				lptr2[0] = jpc_fix_asr(lptr2[0], 1);
 				++lptr2;
 			}
@@ -1542,8 +1501,8 @@ void jpc_ft_invlift_colres(jpc_fix_t *a, int numrows, int numcols, int stride,
 
 }
 
-int jpc_ft_analyze(jpc_fix_t *a, int xstart, int ystart, int width, int height,
-  int stride)
+static int jpc_ft_analyze(jpc_fix_t *a, int xstart, int ystart, int width, 
+  int height, int stride)
 {
 	int numrows = height;
 	int numcols = width;
@@ -1578,8 +1537,8 @@ int jpc_ft_analyze(jpc_fix_t *a, int xstart, int ystart, int width, int height,
 
 }
 
-int jpc_ft_synthesize(jpc_fix_t *a, int xstart, int ystart, int width, int height,
-  int stride)
+static int jpc_ft_synthesize(jpc_fix_t *a, int xstart, int ystart, int width, 
+  int height, int stride)
 {
 	int numrows = height;
 	int numcols = width;
@@ -1626,12 +1585,17 @@ int jpc_ft_synthesize(jpc_fix_t *a, int xstart, int ystart, int width, int heigh
 #define LGAIN (1.0 / 1.23017410558578)
 #define HGAIN (1.0 / 1.62578613134411)
 
-void jpc_ns_fwdlift_row(jpc_fix_t *a, int numcols, int parity)
+static int jpc_ns_getbordersize(void)
+{
+	return 2;
+}
+
+static void jpc_ns_fwdlift_row(jpc_fix_t *a, int numcols, int parity)
 {
 
-	register jpc_fix_t *lptr;
-	register jpc_fix_t *hptr;
-	register int n;
+	jpc_fix_t *lptr;
+	jpc_fix_t *hptr;
+	int n;
 	int llen;
 
 	llen = (numcols + 1 - parity) >> 1;
@@ -1739,7 +1703,6 @@ void jpc_ns_fwdlift_row(jpc_fix_t *a, int numcols, int parity)
 #if defined(WT_LENONE)
 		if (parity) {
 			lptr = &a[0];
-			//lptr[0] <<= 1;
 			lptr[0] = jpc_fix_asl(lptr[0], 1);
 		}
 #endif
@@ -1748,16 +1711,16 @@ void jpc_ns_fwdlift_row(jpc_fix_t *a, int numcols, int parity)
 
 }
 
-void jpc_ns_fwdlift_colgrp(jpc_fix_t *a, int numrows, int stride,
+static void jpc_ns_fwdlift_colgrp(jpc_fix_t *a, int numrows, int stride,
   int parity)
 {
 
 	jpc_fix_t *lptr;
 	jpc_fix_t *hptr;
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int n;
-	register int i;
+	jpc_fix_t *lptr2;
+	jpc_fix_t *hptr2;
+	int n;
+	int i;
 	int llen;
 
 	llen = (numrows + 1 - parity) >> 1;
@@ -1946,7 +1909,6 @@ void jpc_ns_fwdlift_colgrp(jpc_fix_t *a, int numrows, int stride,
 		if (parity) {
 			lptr2 = &a[0];
 			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//lptr2[0] <<= 1;
 				lptr2[0] = jpc_fix_asl(lptr2[0], 1);
 				++lptr2;
 			}
@@ -1957,16 +1919,16 @@ void jpc_ns_fwdlift_colgrp(jpc_fix_t *a, int numrows, int stride,
 
 }
 
-void jpc_ns_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols,
+static void jpc_ns_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols,
   int stride, int parity)
 {
 
 	jpc_fix_t *lptr;
 	jpc_fix_t *hptr;
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int n;
-	register int i;
+	jpc_fix_t *lptr2;
+	jpc_fix_t *hptr2;
+	int n;
+	int i;
 	int llen;
 
 	llen = (numrows + 1 - parity) >> 1;
@@ -2155,7 +2117,6 @@ void jpc_ns_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols,
 		if (parity) {
 			lptr2 = &a[0];
 			for (i = 0; i < numcols; ++i) {
-				//lptr2[0] <<= 1;
 				lptr2[0] = jpc_fix_asl(lptr2[0], 1);
 				++lptr2;
 			}
@@ -2166,15 +2127,15 @@ void jpc_ns_fwdlift_colres(jpc_fix_t *a, int numrows, int numcols,
 
 }
 
-void jpc_ns_fwdlift_col(jpc_fix_t *a, int numrows, int stride,
+static void jpc_ns_fwdlift_col(jpc_fix_t *a, int numrows, int stride,
   int parity)
 {
 
 	jpc_fix_t *lptr;
 	jpc_fix_t *hptr;
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int n;
+	jpc_fix_t *lptr2;
+	jpc_fix_t *hptr2;
+	int n;
 	int llen;
 
 	llen = (numrows + 1 - parity) >> 1;
@@ -2334,7 +2295,6 @@ void jpc_ns_fwdlift_col(jpc_fix_t *a, int numrows, int stride,
 #if defined(WT_LENONE)
 		if (parity) {
 			lptr2 = &a[0];
-			//lptr2[0] <<= 1;
 			lptr2[0] = jpc_fix_asl(lptr2[0], 1);
 			++lptr2;
 		}
@@ -2344,12 +2304,12 @@ void jpc_ns_fwdlift_col(jpc_fix_t *a, int numrows, int stride,
 
 }
 
-void jpc_ns_invlift_row(jpc_fix_t *a, int numcols, int parity)
+static void jpc_ns_invlift_row(jpc_fix_t *a, int numcols, int parity)
 {
 
-	register jpc_fix_t *lptr;
-	register jpc_fix_t *hptr;
-	register int n;
+	jpc_fix_t *lptr;
+	jpc_fix_t *hptr;
+	int n;
 	int llen;
 
 	llen = (numcols + 1 - parity) >> 1;
@@ -2457,7 +2417,6 @@ void jpc_ns_invlift_row(jpc_fix_t *a, int numcols, int parity)
 #if defined(WT_LENONE)
 		if (parity) {
 			lptr = &a[0];
-			//lptr[0] >>= 1;
 			lptr[0] = jpc_fix_asr(lptr[0], 1);
 		}
 #endif
@@ -2466,16 +2425,16 @@ void jpc_ns_invlift_row(jpc_fix_t *a, int numcols, int parity)
 
 }
 
-void jpc_ns_invlift_colgrp(jpc_fix_t *a, int numrows, int stride,
+static void jpc_ns_invlift_colgrp(jpc_fix_t *a, int numrows, int stride,
   int parity)
 {
 
 	jpc_fix_t *lptr;
 	jpc_fix_t *hptr;
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int n;
-	register int i;
+	jpc_fix_t *lptr2;
+	jpc_fix_t *hptr2;
+	int n;
+	int i;
 	int llen;
 
 	llen = (numrows + 1 - parity) >> 1;
@@ -2664,7 +2623,6 @@ void jpc_ns_invlift_colgrp(jpc_fix_t *a, int numrows, int stride,
 		if (parity) {
 			lptr2 = &a[0];
 			for (i = 0; i < JPC_QMFB_COLGRPSIZE; ++i) {
-				//lptr2[0] >>= 1;
 				lptr2[0] = jpc_fix_asr(lptr2[0], 1);
 				++lptr2;
 			}
@@ -2675,16 +2633,16 @@ void jpc_ns_invlift_colgrp(jpc_fix_t *a, int numrows, int stride,
 
 }
 
-void jpc_ns_invlift_colres(jpc_fix_t *a, int numrows, int numcols,
+static void jpc_ns_invlift_colres(jpc_fix_t *a, int numrows, int numcols,
   int stride, int parity)
 {
 
 	jpc_fix_t *lptr;
 	jpc_fix_t *hptr;
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int n;
-	register int i;
+	jpc_fix_t *lptr2;
+	jpc_fix_t *hptr2;
+	int n;
+	int i;
 	int llen;
 
 	llen = (numrows + 1 - parity) >> 1;
@@ -2873,7 +2831,6 @@ void jpc_ns_invlift_colres(jpc_fix_t *a, int numrows, int numcols,
 		if (parity) {
 			lptr2 = &a[0];
 			for (i = 0; i < numcols; ++i) {
-				//lptr2[0] >>= 1;
 				lptr2[0] = jpc_fix_asr(lptr2[0], 1);
 				++lptr2;
 			}
@@ -2884,15 +2841,15 @@ void jpc_ns_invlift_colres(jpc_fix_t *a, int numrows, int numcols,
 
 }
 
-void jpc_ns_invlift_col(jpc_fix_t *a, int numrows, int stride,
+static void jpc_ns_invlift_col(jpc_fix_t *a, int numrows, int stride,
   int parity)
 {
 
 	jpc_fix_t *lptr;
 	jpc_fix_t *hptr;
-	register jpc_fix_t *lptr2;
-	register jpc_fix_t *hptr2;
-	register int n;
+	jpc_fix_t *lptr2;
+	jpc_fix_t *hptr2;
+	int n;
 	int llen;
 
 	llen = (numrows + 1 - parity) >> 1;
@@ -3052,7 +3009,6 @@ void jpc_ns_invlift_col(jpc_fix_t *a, int numrows, int stride,
 #if defined(WT_LENONE)
 		if (parity) {
 			lptr2 = &a[0];
-			//lptr2[0] >>= 1;
 			lptr2[0] = jpc_fix_asr(lptr2[0], 1);
 			++lptr2;
 		}
@@ -3062,8 +3018,8 @@ void jpc_ns_invlift_col(jpc_fix_t *a, int numrows, int stride,
 
 }
 
-int jpc_ns_analyze(jpc_fix_t *a, int xstart, int ystart, int width, int height,
-  int stride)
+static int jpc_ns_analyze(jpc_fix_t *a, int xstart, int ystart, int width, 
+  int height, int stride)
 {
 
 	int numrows = height;
@@ -3099,7 +3055,7 @@ int jpc_ns_analyze(jpc_fix_t *a, int xstart, int ystart, int width, int height,
 
 }
 
-int jpc_ns_synthesize(jpc_fix_t *a, int xstart, int ystart, int width,
+static int jpc_ns_synthesize(jpc_fix_t *a, int xstart, int ystart, int width,
   int height, int stride)
 {
 

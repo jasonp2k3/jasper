@@ -104,6 +104,7 @@ any particular platform.  Hopefully, it is not too unreasonable, however. */
 typedef struct {
 	int (*analyze)(jpc_fix_t *, int, int, int, int, int);
 	int (*synthesize)(jpc_fix_t *, int, int, int, int, int);
+	int (*getbordersize)(void);
 	double *lpenergywts;
 	double *hpenergywts;
 } jpc_qmfb2d_t;
